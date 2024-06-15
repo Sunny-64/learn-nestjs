@@ -1,7 +1,7 @@
 import { ApolloServer } from "@apollo/server";
 import { startStandaloneServer } from "@apollo/server/standalone";
 
-export const authors = [
+export let authors = [
     {
         id : '1', 
         name : 'Harper Lee'
@@ -20,7 +20,7 @@ export const authors = [
     }
 ]
 
-export const books = [
+export let books = [
     {
         id : '1', 
         title : 'To Kill a Mockingbird', 
@@ -71,6 +71,22 @@ export const typeDefs = `#graphql
         author(id : ID!) : Author
     }
 
+    type Mutation {
+        deleteBook(id : ID!) : [Book]
+        addBook(book : AddBookInput!) : Book!
+        updateBook(book : UpdateBookInput!, id : ID!) : Book!
+    }
+
+    input AddBookInput {
+        title : String!
+        author_id : String!
+    }
+    
+    input UpdateBookInput {
+        title : String
+        author_id : String
+    }
+
 `
 
 const resolvers = {
@@ -86,6 +102,32 @@ const resolvers = {
    Book : {
         author : (parent) => authors.find(a => a.id === parent.author_id)
    }, 
+
+   Mutation : {
+        deleteBook : (_, args) => books.filter(b => b.id !== args.id), 
+        addBook : (_, args) => {
+            let book = {
+                ...args.book, 
+                id : Math.floor(Math.random() * 100 + 1).toString()
+            }
+            books.push(book); 
+            return book; 
+        }, 
+        updateBook : (_, args) => {
+            books = books.map(b => {
+                if(args.id === b.id) {
+                    return {
+                        ...b,
+                        ...args.book
+                    }
+                }
+
+                return b;
+            }); 
+
+            return books.find(b => b.id === args.id); 
+        }
+   }
 }
 
 // The ApolloServer constructor requires two parameters: your schema
